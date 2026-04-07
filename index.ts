@@ -38,17 +38,20 @@ You have access to a persistent memory system for storing and recalling informat
 - Project-level: ${projectDir}/*.md
 - User-level: ${userDir}/*.md
 
-### How It Works
+### How to use
 
 - Each memory file has YAML frontmatter with \`name\` and \`description\`
 - Use the \`read\` tool to load specific memories as needed
 - Use \`write\` to create new memories (include frontmatter) or \`edit\` to update existing ones
 - Use \`bash\` with \`rm\` to delete a memory file
 
-### Rules
+### Guidelines
 
-- Proactively save project-level memories when you learn something useful about the project
+- Read memories depending on the task given to you by the user
 - Only write to user-level memories when the user explicitly asks
+- Proactively save project-level memories when you learn something useful about the project
+  - Before finishing your task, review what you have learned
+  - Add new memories or edit existing ones to keep them consistent with any changes made
 
 ### Available Project Memories
 
