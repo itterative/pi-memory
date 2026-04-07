@@ -16,50 +16,47 @@ interface CachedMemoryIndex {
 
 const ENTRY_TYPE = "pi-memory:memory-index";
 
+function formatMemoryList(memories: MemoryMeta[]): string {
+    return memories.length > 0 ? memories.map((m) => `- **${m.name}** - ${m.description}`).join("\n") : "None";
+}
+
 function buildPromptAppendix(
     projectMemories: MemoryMeta[],
     userMemories: MemoryMeta[],
     projectDir: string,
     userDir: string,
 ): string {
-    const projectLines =
-        projectMemories.length > 0
-            ? projectMemories.map((m) => `- **${m.name}** - ${m.description}`).join("\n")
-            : "None";
+    const projectLines = formatMemoryList(projectMemories);
+    const userLines = formatMemoryList(userMemories);
 
-    const userLines =
-        userMemories.length > 0 ? userMemories.map((m) => `- **${m.name}** - ${m.description}`).join("\n") : "None";
+    return `## Memory System
 
-    return [
-        "## Memory System",
-        "",
-        "You have access to a persistent memory system for storing and recalling information across sessions.",
-        "",
-        "### Locations",
-        "",
-        `- Project-level: ${projectDir}/*.md`,
-        `- User-level: ${userDir}/*.md`,
-        "",
-        "### How It Works",
-        "",
-        "- Each memory file has YAML frontmatter with `name` and `description`",
-        "- Use the `read` tool to load specific memories as needed",
-        "- Use `write` to create new memories (include frontmatter) or `edit` to update existing ones",
-        "- Use `bash` with `rm` to delete a memory file",
-        "",
-        "### Rules",
-        "",
-        "- Proactively save project-level memories when you learn something useful about the project",
-        "- Only write to user-level memories when the user explicitly asks",
-        "",
-        "### Available Project Memories",
-        "",
-        projectLines,
-        "",
-        "### Available User Memories",
-        "",
-        userLines,
-    ].join("\n");
+You have access to a persistent memory system for storing and recalling information across sessions.
+
+### Locations
+
+- Project-level: ${projectDir}/*.md
+- User-level: ${userDir}/*.md
+
+### How It Works
+
+- Each memory file has YAML frontmatter with \`name\` and \`description\`
+- Use the \`read\` tool to load specific memories as needed
+- Use \`write\` to create new memories (include frontmatter) or \`edit\` to update existing ones
+- Use \`bash\` with \`rm\` to delete a memory file
+
+### Rules
+
+- Proactively save project-level memories when you learn something useful about the project
+- Only write to user-level memories when the user explicitly asks
+
+### Available Project Memories
+
+${projectLines}
+
+### Available User Memories
+
+${userLines}`;
 }
 
 export default function (pi: ExtensionAPI) {
