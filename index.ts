@@ -150,6 +150,7 @@ export default function (pi: ExtensionAPI) {
                 const entry = entries[i];
                 if (entry.type === "custom" && entry.customType === ENTRY_TYPE) {
                     cached = entry.data as CachedMemoryIndex;
+                    break;
                 }
             }
 
