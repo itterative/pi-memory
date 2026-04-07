@@ -1,51 +1,11 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { mkdir, readdir, readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-interface MemoryMeta {
-    name: string;
-    description: string;
-}
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
-class FrontmatterParseError extends Error {
-    constructor(
-        public readonly filePath: string,
-        reason: string,
-    ) {
-        super(`${filePath}: ${reason}`);
-        this.name = "FrontmatterParseError";
-    }
-}
-
-function parseFrontmatter(content: string, filePath: string): MemoryMeta {
-    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-    if (!match) {
-        throw new FrontmatterParseError(filePath, "missing YAML frontmatter delimiters (---)");
-    }
-
-    const frontmatter = match[1];
-    const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
-    const descMatch = frontmatter.match(/^description:\s*(.+)$/m);
-
-    if (!nameMatch) {
-        throw new FrontmatterParseError(filePath, "missing required `name` field in frontmatter");
-    }
-    if (!descMatch) {
-        throw new FrontmatterParseError(filePath, "missing required `description` field in frontmatter");
-    }
-
-    return {
-        name: nameMatch[1].trim(),
-        description: descMatch[1].trim(),
-    };
-}
-
-interface ScanResult {
-    memories: MemoryMeta[];
-    errors: FrontmatterParseError[];
-}
+import { scanMemories, type MemoryMeta } from "./utils/memories";
+import { FrontmatterParseError } from "./utils/frontmatter";
 
 interface CachedMemoryIndex {
     projectDir: string;
@@ -55,29 +15,6 @@ interface CachedMemoryIndex {
 }
 
 const ENTRY_TYPE = "pi-memory:memory-index";
-
-async function scanMemories(dir: string): Promise<ScanResult> {
-    if (!existsSync(dir)) return { memories: [], errors: [] };
-
-    const entries = await readdir(dir);
-    const memories: MemoryMeta[] = [];
-    const errors: FrontmatterParseError[] = [];
-
-    for (const entry of entries) {
-        if (!entry.endsWith(".md")) continue;
-        const filePath = join(dir, entry);
-        try {
-            const content = await readFile(filePath, "utf8");
-            memories.push(parseFrontmatter(content, filePath));
-        } catch (e) {
-            if (e instanceof FrontmatterParseError) {
-                errors.push(e);
-            }
-        }
-    }
-
-    return { memories, errors };
-}
 
 function buildPromptAppendix(
     projectMemories: MemoryMeta[],
