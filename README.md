@@ -31,7 +31,10 @@ description: Key architectural decisions, patterns, and module layout
 | ------------------------- | ------- | --------------------------------------------------------------------------------------------- |
 | `PI_MEMORY_SESSION_CACHE` | `true`  | Cache the memory index in the session entry to avoid re-scanning the filesystem on `/reload`. |
 
-Set to `false` to force a fresh filesystem scan on every session start.
+> [!WARNING]
+> Setting `PI_MEMORY_SESSION_CACHE` to false will force a fresh scan of memories, however this might lead
+> to system prompt changing on the next turn following a reload, clear, resume, or other operations which
+> restart the agent session.
 
 ## License
 
