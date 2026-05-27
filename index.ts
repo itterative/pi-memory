@@ -136,7 +136,7 @@ export default function (pi: ExtensionAPI) {
                 message: {
                     customType: "pi-memory",
                     content: cachedAppendix,
-                    display: true,
+                    display: false,
                 },
             };
         }
