@@ -2,7 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { scanMemories, type MemoryMeta } from "./utils/memories";
 import { FrontmatterParseError } from "./utils/frontmatter";
@@ -130,6 +130,16 @@ export default function (pi: ExtensionAPI) {
 
     pi.on("before_agent_start", async (event, _ctx) => {
         if (!cachedAppendix) return;
+
+        if (event.systemPromptOptions) {
+            return {
+                message: {
+                    customType: "pi-memory",
+                    content: cachedAppendix,
+                    display: true,
+                },
+            };
+        }
 
         return {
             systemPrompt: event.systemPrompt + "\n\n" + cachedAppendix,
