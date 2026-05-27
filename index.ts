@@ -65,6 +65,7 @@ ${userLines}`;
 export default function (pi: ExtensionAPI) {
     let cachedAppendix = "";
     let maxContextTokens = 0;
+    let lastRemindedAt = 0;
     let currentBaseline = 0;
     let currentStreamedChars = 0;
 
@@ -133,6 +134,8 @@ export default function (pi: ExtensionAPI) {
 
     pi.on("agent_start", async (_event, _ctx) => {
         maxContextTokens = 0;
+        currentBaseline = 0;
+        currentStreamedChars = 0;
     });
 
     pi.on("message_start", async (event, ctx) => {
@@ -184,14 +187,21 @@ export default function (pi: ExtensionAPI) {
         }
 
         const reminderEnabled = process.env.PI_MEMORY_REMINDER === "true";
-        const threshold = parseInt(process.env.PI_MEMORY_REMINDER_THRESHOLD ?? "15000", 10);
-        const triggered = reminderEnabled && maxContextTokens >= threshold;
+        const threshold = parseInt(process.env.PI_MEMORY_REMINDER_THRESHOLD ?? "25000", 10);
+        const newTokens = maxContextTokens - lastRemindedAt;
+        const triggered = reminderEnabled && newTokens >= threshold;
+
+        if (triggered) {
+            lastRemindedAt = maxContextTokens;
+        }
 
         if (reminderEnabled) {
             pi.appendEntry("pi-memory:debug", {
                 reminderEnabled,
                 threshold,
                 maxContextTokens,
+                newTokens,
+                lastRemindedAt,
                 triggered,
             });
         }
