@@ -64,6 +64,9 @@ ${userLines}`;
 
 export default function (pi: ExtensionAPI) {
     let cachedAppendix = "";
+    let maxContextTokens = 0;
+    let currentBaseline = 0;
+    let currentStreamedChars = 0;
 
     pi.on("session_start", async (event, ctx) => {
         const projectDir = join(ctx.cwd, ".pi", "agent", "memory");
@@ -128,21 +131,80 @@ export default function (pi: ExtensionAPI) {
         cachedAppendix = buildPromptAppendix(projectMemories, userMemories, projectDir, userDir);
     });
 
+    pi.on("agent_start", async (_event, _ctx) => {
+        maxContextTokens = 0;
+    });
+
+    pi.on("message_start", async (event, ctx) => {
+        if (event.message.role !== "assistant") return;
+        const usage = ctx.getContextUsage();
+        currentBaseline = usage?.tokens ?? 0;
+        currentStreamedChars = 0;
+        if (currentBaseline > maxContextTokens) {
+            maxContextTokens = currentBaseline;
+        }
+    });
+
+    pi.on("message_update", async (event, _ctx) => {
+        if (event.message.role !== "assistant") return;
+        const ev = event.assistantMessageEvent;
+        if (ev.type === "text_delta" || ev.type === "thinking_delta") {
+            currentStreamedChars += ev.delta.length;
+        }
+        const estimated = currentBaseline + Math.ceil(currentStreamedChars / 4);
+        if (estimated > maxContextTokens) {
+            maxContextTokens = estimated;
+        }
+    });
+
     pi.on("before_agent_start", async (event, _ctx) => {
         if (!cachedAppendix) return;
 
-        if (event.systemPromptOptions) {
-            return {
-                message: {
-                    customType: "pi-memory",
-                    content: cachedAppendix,
-                    display: false,
-                },
+        const memoryBlock = `<memory_system>\n${cachedAppendix}\n</memory_system>`;
+        let systemPrompt = event.systemPrompt;
+        const projectContextEnd = "</project_context>";
+        const idx = systemPrompt.indexOf(projectContextEnd);
+        if (idx !== -1) {
+            systemPrompt =
+                systemPrompt.slice(0, idx + projectContextEnd.length) +
+                "\n\n" +
+                memoryBlock +
+                "\n" +
+                systemPrompt.slice(idx + projectContextEnd.length);
+        } else {
+            systemPrompt = systemPrompt + "\n" + memoryBlock;
+        }
+
+        const result: { systemPrompt: string; message?: { customType: string; content: string; display: boolean } } = {
+            systemPrompt,
+        };
+
+        if (!event.systemPromptOptions) {
+            return result;
+        }
+
+        const reminderEnabled = process.env.PI_MEMORY_REMINDER === "true";
+        const threshold = parseInt(process.env.PI_MEMORY_REMINDER_THRESHOLD ?? "15000", 10);
+        const triggered = reminderEnabled && maxContextTokens >= threshold;
+
+        if (reminderEnabled) {
+            pi.appendEntry("pi-memory:debug", {
+                reminderEnabled,
+                threshold,
+                maxContextTokens,
+                triggered,
+            });
+        }
+
+        if (triggered) {
+            result.message = {
+                customType: "pi-memory",
+                content:
+                    "<memory_reminder>\nRefer to the <memory_system> section in your system prompt for available memories and usage guidelines.\n</memory_reminder>",
+                display: false,
             };
         }
 
-        return {
-            systemPrompt: event.systemPrompt + "\n\n" + cachedAppendix,
-        };
+        return result;
     });
 }
