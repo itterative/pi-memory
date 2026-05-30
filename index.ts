@@ -210,8 +210,14 @@ export default function (pi: ExtensionAPI) {
     pi.on("before_agent_start", async (event, _ctx) => {
         if (!cachedAppendix) return;
 
-        const memoryBlock = `<memory_system>\n${cachedAppendix}\n</memory_system>`;
         let systemPrompt = event.systemPrompt;
+
+        // Skip if already injected (e.g. sub-agent inheriting parent's prompt)
+        if (systemPrompt.includes("<memory_system>")) {
+            return;
+        }
+
+        const memoryBlock = `<memory_system>\n${cachedAppendix}\n</memory_system>`;
         const projectContextEnd = "</project_context>";
         const idx = systemPrompt.indexOf(projectContextEnd);
         if (idx !== -1) {
