@@ -9,6 +9,10 @@
 export interface MemoryMeta {
     name: string;
     description: string;
+    category?: string;
+    priority?: number;
+    keep_updated?: boolean;
+    status?: string;
 }
 
 export class FrontmatterParseError extends Error {
@@ -222,5 +226,24 @@ export function parseFrontmatter(content: string, filePath: string): MemoryMeta 
         throw new FrontmatterParseError(filePath, "missing required `description` field in frontmatter");
     }
 
-    return { name, description };
+    const meta: MemoryMeta = { name, description };
+
+    const category = fields.get("category");
+    if (category !== undefined) meta.category = category;
+
+    const priorityStr = fields.get("priority");
+    if (priorityStr !== undefined) {
+        const priority = parseInt(priorityStr, 10);
+        if (!isNaN(priority)) meta.priority = priority;
+    }
+
+    const keepUpdatedStr = fields.get("keep_updated");
+    if (keepUpdatedStr !== undefined) {
+        meta.keep_updated = keepUpdatedStr === "true" || keepUpdatedStr === "yes";
+    }
+
+    const status = fields.get("status");
+    if (status !== undefined) meta.status = status;
+
+    return meta;
 }

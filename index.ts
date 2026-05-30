@@ -16,8 +16,54 @@ interface CachedMemoryIndex {
 
 const ENTRY_TYPE = "pi-memory:memory-index";
 
+const CATEGORY_ORDER = ["architecture", "meta", "workflow", "convention"];
+
 function formatMemoryList(memories: MemoryMeta[]): string {
-    return memories.length > 0 ? memories.map((m) => `- **${m.name}** - ${m.description}`).join("\n") : "None";
+    if (memories.length === 0) return "None";
+
+    const grouped = new Map<string, MemoryMeta[]>();
+    const uncategorized: MemoryMeta[] = [];
+
+    for (const m of memories) {
+        if (m.category) {
+            if (!grouped.has(m.category)) grouped.set(m.category, []);
+            grouped.get(m.category)!.push(m);
+        } else {
+            uncategorized.push(m);
+        }
+    }
+
+    const sortByPriority = (a: MemoryMeta, b: MemoryMeta) => (a.priority ?? 99) - (b.priority ?? 99);
+    for (const group of grouped.values()) {
+        group.sort(sortByPriority);
+    }
+    uncategorized.sort(sortByPriority);
+
+    const lines: string[] = [];
+    let first = true;
+
+    for (const cat of CATEGORY_ORDER) {
+        const group = grouped.get(cat);
+        if (!group || group.length === 0) continue;
+        if (!first) lines.push("");
+        first = false;
+        lines.push(`#### ${cat.charAt(0).toUpperCase() + cat.slice(1)}`);
+        for (const m of group) {
+            const flag = m.keep_updated ? " [high-churn]" : "";
+            lines.push(`- **${m.name}**${flag} — ${m.description}`);
+        }
+    }
+
+    if (uncategorized.length > 0) {
+        if (!first) lines.push("");
+        lines.push("#### Other");
+        for (const m of uncategorized) {
+            const flag = m.keep_updated ? " [high-churn]" : "";
+            lines.push(`- **${m.name}**${flag} — ${m.description}`);
+        }
+    }
+
+    return lines.join("\n");
 }
 
 function buildPromptAppendix(
@@ -40,7 +86,7 @@ You have access to a persistent memory system for storing and recalling informat
 
 ### How to use
 
-- Each memory file has YAML frontmatter with \`name\` and \`description\`
+- Each memory file has YAML frontmatter with \`name\` (string), \`description\` (string), and optional \`category\` (string) / \`priority\` (number) / \`keep_updated\` (boolean) / \`status\` (string) fields
 - Use the \`read\` tool to load specific memories as needed
 - Use \`write\` to create new memories (include frontmatter) or \`edit\` to update existing ones
 - Use \`bash\` with \`rm\` to delete a memory file
@@ -52,6 +98,7 @@ You have access to a persistent memory system for storing and recalling informat
 - Proactively save project-level memories when you learn something useful about the project
   - Before finishing your task, review what you have learned
   - Add new memories or edit existing ones to keep them consistent with any changes made
+- Memories marked with [high-churn] are high-churn — review and update them after relevant changes
 
 ### Available Project Memories
 
