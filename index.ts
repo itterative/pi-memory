@@ -84,21 +84,27 @@ You have access to a persistent memory system for storing and recalling informat
 - Project-level: ${projectDir}/*.md
 - User-level: ${userDir}/*.md
 
+All memory files are stored directly in these directories. The \`category\` field is frontmatter metadata and does not create subdirectories.
+
 ### How to use
 
 - Each memory file has YAML frontmatter with \`name\` (string), \`description\` (string), and optional \`category\` (string) / \`priority\` (number) / \`keep_updated\` (boolean) / \`status\` (string) fields
+  - The \`name\` must match the filename without \`.md\` (e.g. \`name: conventions\` in \`conventions.md\`)
+  - Keep \`description\` to one line; it appears in the system prompt to help future agents decide whether to load the memory
+- Use the standard built-in tools (\`read\`, \`write\`, \`edit\`, \`bash\`) to work with memories — there are no custom memory tools
 - Use the \`read\` tool to load specific memories as needed
 - Use \`write\` to create new memories (include frontmatter) or \`edit\` to update existing ones
 - Use \`bash\` with \`rm\` to delete a memory file
 
 ### Guidelines
 
-- Read memories depending on the task given to you by the user
+- At the start of each task, proactively read any memories whose names or descriptions appear relevant to the user's request
 - Only write to user-level memories when the user explicitly asks
 - Proactively save project-level memories when you learn something useful about the project
   - Before finishing your task, review what you have learned
   - Add new memories or edit existing ones to keep them consistent with any changes made
 - Memories marked with [high-churn] are high-churn — review and update them after relevant changes
+- The memory list below is cached at session start. New or updated memories created during this session will not appear in the list until the next session or a \`/reload\`
 
 ### Available Project Memories
 
