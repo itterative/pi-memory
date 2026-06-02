@@ -27,6 +27,8 @@ A memory system extension for pi that gives the agent persistent, structured rec
 
 There is no index file. The extension scans the `memory/` directories and reads frontmatter from each `.md` file to build the index dynamically. This ensures the index is always in sync with the actual files.
 
+All memory files are stored directly in the `memory/` directory. The `category` field is frontmatter metadata and does not create subdirectories.
+
 ## File Formats
 
 ### memory/[MEMORY].md
@@ -54,10 +56,10 @@ description: Key architectural decisions, patterns, and module layout
 
 #### Frontmatter Fields
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `name` | Yes | Matches the filename (without `.md`). Lowercase, hyphens allowed. |
-| `description` | Yes | One-line summary. Used in the system prompt to help the agent decide whether to load this memory. |
+| Field         | Required | Description                                                                                       |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `name`        | Yes      | Matches the filename (without `.md`). Lowercase, hyphens allowed.                                 |
+| `description` | Yes      | One-line summary. Used in the system prompt to help the agent decide whether to load this memory. |
 
 Files without valid frontmatter trigger a warning during discovery.
 
@@ -95,6 +97,7 @@ Set the environment variable `PI_MEMORY_SESSION_CACHE=false` to disable session 
 The agent uses the built-in `read` tool. No custom tools needed.
 
 Workflow:
+
 1. The system prompt lists available memories with descriptions
 2. The agent reads specific `memory/[MEMORY].md` files as needed
 
@@ -103,13 +106,16 @@ Workflow:
 The agent uses built-in `edit` and `write` tools. No custom tools needed.
 
 The agent should proactively save project-level memories when:
+
 - It learns something about the project that would be useful in future sessions (architecture, conventions, gotchas)
 - The user asks it to remember something
 
 To save a memory:
+
 1. Create or update `memory/[MEMORY].md` with frontmatter (`name`, `description`) and content
 
 To delete a memory:
+
 1. Remove the file (the agent can use `bash` with `rm`)
 
 No index file needs to be updated — the extension re-scans on next session start.
@@ -122,4 +128,3 @@ Same mechanism, but the agent must **only** write to `~/.pi/agent/memory/` when 
 
 - **`/memory` command:** A slash command for users to quickly view or manage memories. Planned for a future release.
 - **Memory pruning:** Bundled as `skills/memory-prune/SKILL.md`, declared in `package.json` under `pi.skills`. Users invoke via `/skill:memory-prune`.
-
