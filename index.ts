@@ -16,9 +16,13 @@ interface CachedMemoryIndex {
 
 const ENTRY_TYPE = "pi-memory:memory-index";
 
-const CATEGORY_ORDER = ["architecture", "meta", "workflow", "convention"];
+const CATEGORY_ORDER = ["architecture", "meta", "workflow", "tools", "convention"];
 
-function formatMemoryList(memories: MemoryMeta[]): string {
+function titleCaseCategory(category: string): string {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+export function formatMemoryList(memories: MemoryMeta[]): string {
     if (memories.length === 0) return "None";
 
     const grouped = new Map<string, MemoryMeta[]>();
@@ -39,28 +43,31 @@ function formatMemoryList(memories: MemoryMeta[]): string {
     }
     uncategorized.sort(sortByPriority);
 
+    // Known categories in fixed order (only those present), then any unknown
+    // categories alphabetically, then uncategorized memories last under "Other".
+    // This ensures a memory never disappears just because its category is new.
+    const knownCategories = CATEGORY_ORDER.filter((cat) => grouped.has(cat));
+    const unknownCategories = [...grouped.keys()].filter((cat) => !CATEGORY_ORDER.includes(cat)).sort();
+
     const lines: string[] = [];
     let first = true;
 
-    for (const cat of CATEGORY_ORDER) {
-        const group = grouped.get(cat);
-        if (!group || group.length === 0) continue;
+    const renderGroup = (title: string, group: MemoryMeta[]) => {
         if (!first) lines.push("");
         first = false;
-        lines.push(`#### ${cat.charAt(0).toUpperCase() + cat.slice(1)}`);
+        lines.push(`#### ${title}`);
         for (const m of group) {
             const flag = m.keep_updated ? " [high-churn]" : "";
             lines.push(`- **${m.name}**${flag} — ${m.description}`);
         }
+    };
+
+    for (const cat of [...knownCategories, ...unknownCategories]) {
+        renderGroup(titleCaseCategory(cat), grouped.get(cat)!);
     }
 
     if (uncategorized.length > 0) {
-        if (!first) lines.push("");
-        lines.push("#### Other");
-        for (const m of uncategorized) {
-            const flag = m.keep_updated ? " [high-churn]" : "";
-            lines.push(`- **${m.name}**${flag} — ${m.description}`);
-        }
+        renderGroup("Other", uncategorized);
     }
 
     return lines.join("\n");

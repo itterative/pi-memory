@@ -30,7 +30,7 @@ This doc tracks the changes made to the pi-memory extension and project memory f
 ### Presentation Rules
 
 1. **Grouping**: Memories are grouped by `category` under markdown headers (`#### Architecture`, etc.)
-2. **Order**: Categories appear in fixed order: `architecture` → `meta` → `workflow` → `convention` → `Other` (uncategorized)
+2. **Order**: Categories appear in fixed order: `architecture` → `meta` → `workflow` → `tools` → `convention` → *unknown categories (alphabetical)* → `Other` (uncategorized). Memories with a category not in the fixed list render as their own titled section between the known categories and `Other`, so a new category never causes a memory to disappear.
 3. **Sorting**: Within each category, memories sort by `priority` ascending (default 99)
 4. **Annotation**: `keep_updated: true` renders as `[high-churn]` next to the memory name
 5. **Guideline**: The system prompt includes: *"Memories marked with [high-churn] are high-churn — review and update them after relevant changes"*
